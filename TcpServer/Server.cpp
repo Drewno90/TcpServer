@@ -1,3 +1,5 @@
+
+
 #include <stdio.h>
 
 #include <winsock2.h>
@@ -8,31 +10,101 @@ int main()
 
 {
 
-	// Initialize Winsock.
+	WORD wVersionRequested;
 
 	WSADATA wsaData;
 
-	int iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
+	int wsaerr;
 
-	if (iResult != NO_ERROR)
+	// Using MAKEWORD macro, Winsock version request 2.2
 
-		printf("Server: Error at WSAStartup().\n");
+	wVersionRequested = MAKEWORD(2, 2);
+
+
+
+	wsaerr = WSAStartup(wVersionRequested, &wsaData);
+
+	if (wsaerr != 0)
+
+	{
+
+		/* Tell the user that we could not find a usable WinSock DLL.*/
+
+		printf("Server: The Winsock dll not found!\n");
+
+		return 0;
+
+	}
 
 	else
 
-		printf("Server: WSAStartup() is OK.\n");
+	{
+
+		printf("Server: The Winsock dll found!\n");
+
+		printf("Server: The status: %s.\n", wsaData.szSystemStatus);
+
+	}
 
 
 
-	// Create a SOCKET for listening for
+	/* Confirm that the WinSock DLL supports 2.2.*/
 
-	// incoming connection requests.
+	/* Note that if the DLL supports versions greater    */
 
-	SOCKET ListenSocket;
+	/* than 2.2 in addition to 2.2, it will still return */
 
-	ListenSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	/* 2.2 in wVersion since that is the version we      */
 
-	if (ListenSocket == INVALID_SOCKET)
+	/* requested.                                        */
+
+	if (LOBYTE(wsaData.wVersion) != 2 || HIBYTE(wsaData.wVersion) != 2)
+
+	{
+
+		/* Tell the user that we could not find a usable WinSock DLL.*/
+
+		printf("Server: The dll do not support the Winsock version %u.%u!\n", LOBYTE(wsaData.wVersion), HIBYTE(wsaData.wVersion));
+
+		WSACleanup();
+
+		return 0;
+
+	}
+
+	else
+
+	{
+
+		printf("Server: The dll supports the Winsock version %u.%u!\n", LOBYTE(wsaData.wVersion), HIBYTE(wsaData.wVersion));
+
+		printf("Server: The highest version this dll can support: %u.%u\n", LOBYTE(wsaData.wHighVersion), HIBYTE(wsaData.wHighVersion));
+
+	}
+
+
+
+	//////////Create a socket////////////////////////
+
+	//Create a SOCKET object called m_socket.
+
+	SOCKET m_socket;
+
+
+
+	// Call the socket function and return its value to the m_socket variable.
+
+	// For this application, use the Internet address family, streaming sockets, and the TCP/IP protocol.
+
+	// using AF_INET family, TCP socket type and protocol of the AF_INET - IPv4
+
+	m_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+
+
+
+	// Check for errors to ensure that the socket is a valid socket.
+
+	if (m_socket == INVALID_SOCKET)
 
 	{
 
@@ -46,31 +118,48 @@ int main()
 
 	else
 
-		printf("Server: socket() is OK.\n");
+	{
+
+		printf("Server: socket() is OK!\n");
+
+	}
 
 
 
-	// The sockaddr_in structure specifies the address family,
+	////////////////bind//////////////////////////////
 
-	// IP address, and port for the socket that is being bound.
+	// Create a sockaddr_in object and set its values.
 
 	sockaddr_in service;
 
+
+
+	// AF_INET is the Internet address family.
+
 	service.sin_family = AF_INET;
 
-	service.sin_addr.s_addr = inet_addr("127.0.0.1");
+
+	service.sin_addr.s_addr = inet_addr("192.168.1.80");
+
+	// 55555 is the port number to which the socket will be bound…
+
+	// Try other non-standard ports ( > 1024). Max = 2 power to 16 = 65536
 
 	service.sin_port = htons(55555);
 
 
 
-	if (bind(ListenSocket, (SOCKADDR*)&service, sizeof(service)) == SOCKET_ERROR)
+	// Call the bind function, passing the created socket and the sockaddr_in structure as parameters.
+
+	// Check for general errors.
+
+	if (bind(m_socket, (SOCKADDR*)&service, sizeof(service)) == SOCKET_ERROR)
 
 	{
 
-		printf("Server: bind() failed.\n");
+		printf("Server: bind() failed: %ld.\n", WSAGetLastError());
 
-		closesocket(ListenSocket);
+		closesocket(m_socket);
 
 		return 0;
 
@@ -78,31 +167,47 @@ int main()
 
 	else
 
-		printf("Server: bind() is OK.\n");
+	{
+
+		printf("Server: bind() is OK!\n");
+
+	}
 
 
 
-	// Listen for incoming connection requests on the created socket
+	// Call the listen function, passing the created socket and the maximum number of allowed
 
-	if (listen(ListenSocket, 10) == SOCKET_ERROR)
+	// connections to accept as parameters. Check for general errors.
 
-		printf("Server: Error listening on socket.\n");
+	if (listen(m_socket, 10) == SOCKET_ERROR)
+
+		printf("Server: listen(): Error listening on socket %ld.\n", WSAGetLastError());
 
 	else
 
-		printf("Server: listen() is OK.\n");
+	{
+
+		printf("Server: listen() is OK, I'm waiting for connections...\n");
+
+	}
 
 
 
-	// Create a SOCKET for accepting incoming requests.
+	// Create a temporary SOCKET object called AcceptSocket for accepting connections.
 
 	SOCKET AcceptSocket;
 
-	printf("Server: Waiting for client to connect...\n");
 
 
+	// Create a continuous loop that checks for connections requests. If a connection
 
-	// Accept the connection if any...
+	// request occurs, call the accept function to handle the request.
+
+	printf("Server: Waiting for a client to connect...\n");
+
+	printf("***Hint: Server is ready...run your client program...***\n");
+
+	// Do some verification...
 
 	while (1)
 
@@ -114,15 +219,21 @@ int main()
 
 		{
 
-			AcceptSocket = accept(ListenSocket, NULL, NULL);
+			AcceptSocket = accept(m_socket, NULL, NULL);
 
 		}
 
-		printf("Server: accept() is OK.\n");
 
-		printf("Server: Client connected...ready for communication.\n");
 
-		ListenSocket = AcceptSocket;
+		// else, accept the connection...
+
+		// When the client connection has been accepted, transfer control from the
+
+		// temporary socket to the original socket and stop checking for new connections.
+
+		printf("Server: Client Connected!\n");
+
+		m_socket = AcceptSocket;
 
 		break;
 
