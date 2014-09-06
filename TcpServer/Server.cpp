@@ -135,7 +135,7 @@ int main()
 	// AF_INET is the Internet address family.
 
 	service.sin_family = AF_INET;
-	service.sin_addr.s_addr = inet_addr("192.168.1.80");
+	service.sin_addr.s_addr = inet_addr("192.168.1.82");
 
 	// 55555 is the port number to which the socket will be bound…
 	// Try other non-standard ports ( > 1024). Max = 2 power to 16 = 65536
@@ -219,16 +219,33 @@ int main()
 
 	// Receives some test string from client...and client
 	// must send something lol...
+	int Size;
+	
+	bytesRecv = recv(m_socket, recvbuf, sizeof(int), 0);
 
-	bytesRecv = recv(m_socket, recvbuf, 200, 0);
-		
+	Size = recvbuf[0];	
+	cout << "macierz o " <<Size<< "elememtach" << endl;
+	double *C = new double[Size]; 
+	double *D = new double[Size];
+	if (bytesRecv == SOCKET_ERROR)
+		cout << "Server: recv() error  " << WSAGetLastError();
+	else
+	{
+		cout << "Server: recv() is OK." << endl;
+	
+		for (int i = 0; i < Size; i++){
+			recv(m_socket, recvbuf, sizeof(double), 0);
+			memcpy(&C[i], recvbuf, sizeof(double));
+
+		}
+	}
 	if (bytesRecv == SOCKET_ERROR)
 		cout<<"Server: recv() error  "<< WSAGetLastError();
 	else
 	{
 		cout<<"Server: recv() is OK."<<endl;
-		int n = strlen(recvbuf);
-		int k = (int)sqrt(n);
+		
+		int k = (int)sqrt(Size);
 		int p=0;
 		bool ok;
 		double **A = new double *[k];
@@ -239,7 +256,7 @@ int main()
 		}
 		for (int i = 0; i < k; i++)
 		for(int j=0;j<k;j++){
-			A[i][j] = (double)recvbuf[p]; 
+			A[i][j] = C[p]; 
 			p++;
 			}
 		if (ludist(k, A)){
@@ -267,9 +284,24 @@ int main()
 			}
 		}
 		else cout << "DZIELNIK ZERO\n";
-		
+		p = 0;
+		for (int i = 0; i < k; i++)
+		for (int j = 0; j<k; j++){
+			D[p] = B[i][j];
+			cout << D[p];
+			p++;
+		}
+		for (int i = 0; i < Size; i++){
+			memcpy(sendbuf, &D[i], sizeof(double));
+			send(m_socket, sendbuf, sizeof(double), 0);
+
+		}
 		cout<<"Server: Bytes received:  "<< bytesRecv<<endl;
+		
 	}
+	cout << "time to resend" << endl;
+
+
 
 	getchar();
 	WSACleanup();
