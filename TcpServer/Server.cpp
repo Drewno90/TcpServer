@@ -197,25 +197,15 @@ int main()
 	}
 	int bytesSent;
 	int bytesRecv = SOCKET_ERROR;
-	char sendbuf[200] = "This string is a test data from server";
+	char sendbuf[200] = "";
 
 	// initialize to empty data...
 
 	char recvbuf[200] = "";
 
-	// Send some test string to client...
+	
 
-	cout<<"Server: Sending some test data to client..."<<endl;
 
-	bytesSent = send(m_socket, sendbuf, strlen(sendbuf), 0);
-
-	if (bytesSent == SOCKET_ERROR)
-		cout<<"Server: send() error  "<< WSAGetLastError()<<endl;
-	else
-	{
-		cout<<"Server: send() is OK."<<endl;
-		cout<<"Server: Bytes Sent:  "<< bytesSent<<endl;
-	}
 
 	// Receives some test string from client...and client
 	// must send something lol...
@@ -239,11 +229,6 @@ int main()
 
 		}
 	}
-	if (bytesRecv == SOCKET_ERROR)
-		cout<<"Server: recv() error  "<< WSAGetLastError();
-	else
-	{
-		cout<<"Server: recv() is OK."<<endl;
 		
 		int k = (int)sqrt(Size);
 		int p=0;
@@ -276,32 +261,31 @@ int main()
 		else ok = false;
 		if (ok)
 		{
+			char buf[4] = "1";
+			send(m_socket, buf, strlen(buf), 0);
 			for (int i = 0; i < k; i++)
 			{
 				for (int j = 0; j < k; j++)
 					cout << setw(10) << B[i][j] << " ";
 				cout << endl;
 			}
-		}
-		else cout << "DZIELNIK ZERO\n";
-		p = 0;
-		for (int i = 0; i < k; i++)
-		for (int j = 0; j<k; j++){
-			D[p] = B[i][j];
-			cout << D[p];
-			p++;
-		}
-		for (int i = 0; i < Size; i++){
-			memcpy(sendbuf, &D[i], sizeof(double));
-			send(m_socket, sendbuf, sizeof(double), 0);
+			p = 0;
+			for (int i = 0; i < k; i++)
+			for (int j = 0; j<k; j++){
+				D[p] = B[i][j];
+				p++;
+			}
+			for (int i = 0; i < Size; i++){
+				memcpy(sendbuf, &D[i], sizeof(double));
+				send(m_socket, sendbuf, sizeof(double), 0);
 
+			}
 		}
-		cout<<"Server: Bytes received:  "<< bytesRecv<<endl;
-		
-	}
-	cout << "time to resend" << endl;
-
-
+		else {
+			cout << "DZIELNIK ZERO\n";
+			char buf[4] = "0";
+			send(m_socket, buf, strlen(buf), 0);
+		}
 
 	getchar();
 	WSACleanup();
