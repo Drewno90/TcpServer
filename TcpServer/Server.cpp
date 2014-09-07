@@ -3,27 +3,46 @@
 #include <winsock2.h>
 #include <iomanip>
 #include <cmath>
-
+#include <thread>
+#include<vector>
+#include<algorithm>
 using namespace std;
 
 const double eps = 1e-12;
 
 bool ludist(int n, double ** A)
 {
-	int i, j, k;
 
-	for (k = 0; k < n - 1; k++)
+	int num_threads=n;
+	int rows = n / num_threads;
+	int extra = n % num_threads;
+	int start = 0;
+	int end = rows;
+	vector<thread> workers;
+	for (int t = 1; t <= num_threads; t++)
 	{
-		if (fabs(A[k][k]) < eps) return false;
-
-		for (i = k + 1; i < n; i++)
-			A[i][k] /= A[k][k];
-
-		for (i = k + 1; i < n; i++)
-		for (j = k + 1; j < n; j++)
-			A[i][j] -= A[i][k] * A[k][j];
+		if (t == num_threads)
+			end += extra;
+		workers.push_back(thread([start, end, n, &A](){
+			for (int k = start; k < end ; k++)
+			{
+				if (fabs(A[k][k]) < eps) return false;
+				int s = k;
+				for (int i = s + 1; i < n; i++)
+					A[i][s] /= A[s][s];
+			}
+			for (int k = start; k < end ; k++)
+			{
+				for (int i = k + 1; i < n; i++)
+				for (int j = k + 1; j < n; j++)
+					A[i][j] -= A[i][k] * A[k][j];
+			}
+		}));
+			start = end;
+			end = start + rows;
 	}
-
+	for (thread& t : workers)
+		t.join();
 	return true;
 }
 
@@ -145,7 +164,7 @@ int main()
 	// Call the bind function, passing the created socket and the sockaddr_in structure as parameters.
 	// Check for general errors.
 
-	if (bind(m_socket, (SOCKADDR*)&service, sizeof(service)) == SOCKET_ERROR)
+	if (::bind(m_socket, (SOCKADDR*)&service,sizeof(service)) == SOCKET_ERROR)
 	{
 		cout<<"Server: bind() failed:  "<< WSAGetLastError()<<endl;
 		closesocket(m_socket);
@@ -291,4 +310,4 @@ int main()
 	WSACleanup();
 
 	return 0;
-}
+} 
